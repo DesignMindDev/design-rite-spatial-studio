@@ -1,0 +1,109 @@
+# Render.com Blueprint for Design-Rite Spatial Studio
+# This service provides floorplan analysis and camera placement recommendations
+# Version: 1.0.0
+
+services:
+  # Design-Rite Spatial Studio - Floorplan Analysis Service
+  - type: web
+    name: design-rite-spatial-studio
+    runtime: node
+    region: oregon # Change to your preferred region
+    plan: free # Start with free tier, upgrade as needed
+
+    # Repository Configuration
+    repo: https://github.com/DesignMindDev/design-rite-spatial-studio # Update with your actual repo URL
+    branch: main
+    rootDir: .
+
+    # Build Configuration
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm start
+
+    # Health Check Configuration
+    healthCheckPath: /api/upload-floorplan
+
+    # Environment Variables
+    envVars:
+      # Node Configuration
+      - key: NODE_VERSION
+        value: 18
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3020
+
+      # Service Identification
+      - key: NEXT_PUBLIC_SERVICE_NAME
+        value: spatial-studio
+      - key: NEXT_PUBLIC_MAIN_APP_URL
+        value: https://design-rite.com
+
+      # Supabase Configuration (Shared Database)
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://aeorianxnxpxveoxzhov.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false # Set this value in Render dashboard for security
+      - key: SUPABASE_SERVICE_KEY
+        sync: false # Set this value in Render dashboard for security
+
+      # OpenAI Configuration for Vision API
+      - key: OPENAI_API_KEY
+        sync: false # Set this value in Render dashboard for security
+
+      # Optional: Performance Tuning
+      - key: NEXT_TELEMETRY_DISABLED
+        value: 1
+      - key: NEXT_SHARP_PATH
+        value: /opt/render/project/src/node_modules/sharp
+
+    # Auto-Deploy Configuration
+    autoDeploy: false # Set to true if you want automatic deploys from git pushes
+
+    # Scaling Configuration (for future use)
+    numInstances: 1
+
+    # Build Filters (optional - ignore certain file changes)
+    buildFilter:
+      paths:
+        - /**
+      ignoredPaths:
+        - /README.md
+        - /docs/**
+        - /*.md
+
+# Database Configuration Notes:
+# This service uses the shared Supabase database (aeorianxnxpxveoxzhov)
+# Before deploying, ensure you have:
+# 1. Run the spatial_studio_tables.sql script in Supabase
+# 2. Created the 'spatial-floorplans' storage bucket in Supabase
+# 3. Set the required environment variables in Render dashboard
+
+# Deployment Instructions:
+# 1. Push this file to your repository
+# 2. In Render dashboard, create new Blueprint
+# 3. Connect your GitHub repository
+# 4. Select this render.yaml file
+# 5. Set the sync: false environment variables in the Render dashboard:
+#    - NEXT_PUBLIC_SUPABASE_ANON_KEY
+#    - SUPABASE_SERVICE_KEY
+#    - OPENAI_API_KEY
+# 6. Deploy the service
+
+# Post-Deployment Checklist:
+# [ ] Verify health check endpoint responds at /api/upload-floorplan
+# [ ] Test file upload to Supabase storage bucket
+# [ ] Verify OpenAI Vision API integration works
+# [ ] Check async processing (upload -> analyze -> poll status)
+# [ ] Test integration with main Design-Rite platform
+
+# Monitoring:
+# - Check Render logs for any startup errors
+# - Monitor OpenAI API usage and costs
+# - Track Supabase storage usage for floorplans
+# - Review async job processing times
+
+# Support:
+# For issues with this deployment, check:
+# - Render logs: https://dashboard.render.com
+# - Supabase logs: https://app.supabase.com/project/aeorianxnxpxveoxzhov
+# - Repository issues: https://github.com/DesignMindDev/design-rite-spatial-studio/issues
