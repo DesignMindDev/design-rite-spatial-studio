@@ -57,7 +57,7 @@ services:
         value: /opt/render/project/src/node_modules/sharp
 
     # Auto-Deploy Configuration
-    autoDeploy: false # Set to true if you want automatic deploys from git pushes
+    autoDeploy: true # Set to true if you want automatic deploys from git pushes
 
     # Scaling Configuration (for future use)
     numInstances: 1
