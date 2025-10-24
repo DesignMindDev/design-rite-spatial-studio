@@ -65,11 +65,11 @@ services:
     # Build Filters (optional - ignore certain file changes)
     buildFilter:
       paths:
-        - /**
+        - "**"
       ignoredPaths:
-        - /README.md
-        - /docs/**
-        - /*.md
+        - "README.md"
+        - "docs/**"
+        - "*.md"
 
 # Database Configuration Notes:
 # This service uses the shared Supabase database (aeorianxnxpxveoxzhov)
