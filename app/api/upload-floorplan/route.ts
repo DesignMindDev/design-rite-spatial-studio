@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/api-auth';
 import { isServiceRequest, getServiceUserContext } from '@/lib/service-auth';
+import { processFloorplanAnalysis } from '@/lib/analysis-worker';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -106,8 +107,15 @@ export async function POST(request: NextRequest) {
 
     console.log('Project created:', projectData.id);
 
-    // Trigger async analysis (fire and forget)
-    triggerAsyncAnalysis(projectData.id);
+    // Trigger async analysis (fire and forget - don't await)
+    // This runs in the background without blocking the response
+    processFloorplanAnalysis(projectData.id).catch(err => {
+      console.error('[Upload] Background analysis failed:', err);
+      console.error('[Upload] Error details:', {
+        message: err.message,
+        projectId: projectData.id
+      });
+    });
 
     // Return immediately
     return NextResponse.json({
@@ -176,36 +184,6 @@ async function uploadWithRetry(
   throw lastError || new Error('Upload failed after retries');
 }
 
-/**
- * Trigger background analysis worker (fire and forget)
- */
-function triggerAsyncAnalysis(projectId: string) {
-  // Determine the correct base URL
-  // Priority: NEXT_PUBLIC_APP_URL (explicit config) > RENDER_EXTERNAL_URL (production) > localhost (dev)
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-    || process.env.RENDER_EXTERNAL_URL
-    || 'http://localhost:3020';
-
-  // Correct path: /api/process-analysis (not /api/spatial-studio/process-analysis)
-  const analysisUrl = `${baseUrl}/api/process-analysis`;
-
-  console.log(`[Upload] Triggering async analysis for project ${projectId}`);
-  console.log(`[Upload] Analysis URL: ${analysisUrl}`);
-
-  fetch(analysisUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ projectId }),
-  }).catch(err => {
-    console.error('[Upload] Failed to trigger async analysis:', err);
-    console.error('[Upload] Analysis URL was:', analysisUrl);
-    console.error('[Upload] Error details:', {
-      message: err.message,
-      code: err.code,
-      cause: err.cause
-    });
-  });
-}
 
 /**
  * Get project status endpoint
