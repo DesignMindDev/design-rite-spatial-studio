@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/api-auth';
+import { isServiceRequest, getServiceUserContext } from '@/lib/service-auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -12,10 +13,19 @@ const supabase = createClient(
  * Returns immediately with projectId and status='pending'
  */
 export async function POST(request: NextRequest) {
-  // Require authentication
-  const auth = await requireAuth();
-  if (auth.error) {
-    return auth.error;
+  // Check if this is a service request (from Main Platform)
+  let userId = null;
+  if (isServiceRequest(request)) {
+    const context = getServiceUserContext(request);
+    userId = context?.userId || 'service-user';
+    console.log('Service request authenticated for upload-floorplan');
+  } else {
+    // Require authentication for regular users
+    const auth = await requireAuth();
+    if (auth.error) {
+      return auth.error;
+    }
+    userId = auth.user?.id;
   }
 
   try {
@@ -229,4 +239,25 @@ export async function GET(request: NextRequest) {
     startedAt: project.analysis_started_at,
     completedAt: project.analysis_completed_at,
   });
+}
+
+/**
+ * Handle OPTIONS requests for CORS preflight
+ */
+export async function OPTIONS() {
+  return NextResponse.json(
+    {
+      status: 'ok',
+      methods: ['GET', 'POST', 'OPTIONS'],
+      service: 'Spatial Studio Upload API'
+    },
+    {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Service-Key, x-service-key',
+      }
+    }
+  );
 }
