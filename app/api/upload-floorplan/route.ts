@@ -216,6 +216,18 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Generate the public URL for the floorplan if it exists
+  let floorplanPublicUrl = null;
+  let floorplanFilename = null;
+
+  if (project.floorplan_url) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    floorplanPublicUrl = `${supabaseUrl}/storage/v1/object/public/spatial-floorplans/${project.floorplan_url}`;
+    // Extract filename from URL (format is typically: timestamp_filename)
+    const parts = project.floorplan_url.split('_');
+    floorplanFilename = parts.length > 1 ? parts.slice(1).join('_') : project.floorplan_url;
+  }
+
   return NextResponse.json({
     projectId: project.id,
     status: project.analysis_status,
@@ -224,6 +236,10 @@ export async function GET(request: NextRequest) {
     dimensions: project.dimensions,
     startedAt: project.analysis_started_at,
     completedAt: project.analysis_completed_at,
+    floorplanUrl: project.floorplan_url,
+    floorplanPublicUrl,
+    floorplanFilename,
+    projectName: project.project_name,
   });
 }
 
